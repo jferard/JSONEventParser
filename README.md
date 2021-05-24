@@ -14,7 +14,7 @@ the need to load the whole JSON object into memory. It relies on three elements 
 * a simple converter from JSON to XML.
 
 Each of these elements is a generator which can be used in a simple `for` loop.
-The mexer provides tokens, the parser provides other tokens, and 
+The lexer provides tokens, the parser provides other tokens, and 
 the converter provides lines of an XML file.
 
 JSON Event Parser is really slow but does not require any dependency.
