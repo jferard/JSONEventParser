@@ -38,5 +38,7 @@ Parse a JSON file
 
 # Tests
 
-    $ python3.8 -m pytest --cov-report term-missing --cov=json_event_parser && flake8 json_event_parser.py
+    $ python3.8 -m pytest --cov-report term-missing --cov=json_event_parser \
+      && python3.8 -m pytest --cov-report term-missing --cov-append --doctest-modules json_event_parser.py --cov=json_event_parser \
+      && flake8 json_event_parser.py
 

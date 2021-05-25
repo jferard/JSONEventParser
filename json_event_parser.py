@@ -405,16 +405,88 @@ class JSONParser:
 _XML_HEADER = """<?xml version="1.0" encoding="utf-8"?>"""
 
 
+def _escape_value(value):
+    """
+    Use CDATA.
+
+    >>> _escape_value("test")
+    'test'
+    >>> _escape_value("te&t")
+    '<![CDATA[te&t]]>'
+
+    :param value: the value
+    :return: the escaped value
+    """
+    if re.search(r"[<>&\"']", value):
+        if ']]>' in value:
+            value = value.replace(']]>', ']]]]><![CDATA[>')
+        return "<![CDATA[" + value + "]]>"
+    else:
+        return value
+
+
+def _escape_tag(key):
+    """
+    >>> _escape_tag("abc")
+    'abc'
+    >>> _escape_tag("a(c")
+    'a_c'
+
+    https://www.w3.org/TR/2008/REC-xml-20081126/#NT-NameChar
+
+    :param value:
+    :return:
+    """
+    if not key:
+        return "_"
+
+    c = key[0]
+    if (c in ":_" or 'A' <= c <= 'Z' or 'a' <= c <= 'z'
+            or '\xC0' <= c <= '\xD6' or '\xD8' <= c <= '\xF6'
+            or '\xF8' <= c <= '\u02FF' or '\u0370' <= c <= '\u037D'
+            or '\u037F' <= c <= '\u1FFF' or '\u200C' <= c <= '\u200D'
+            or '\u2070' <= c <= '\u218F' or '\u2C00' <= c <= '\u2FEF'
+            or '\u3001' <= c <= '\uD7FF' or '\uF900' <= c <= '\uFDCF'
+            or '\uFDF0' <= c <= '\uFFFD'):
+        new_chars = None
+    else:
+        new_chars = list(key)
+        new_chars[0] = "_"
+
+    for i in range(1, len(key)):
+        c = key[i]
+        if not (c in ":_-.\xB7" or '0' <= c <= '9' or 'A' <= c <= 'Z'
+                or 'a' <= c <= 'z' or '\xC0' <= c <= '\xD6'
+                or '\xD8' <= c <= '\xF6' or '\xF8' <= c <= '\u036F'
+                or '\u0370' <= c <= '\u037D' or '\u037F' <= c <= '\u1FFF'
+                or '\u200C' <= c <= '\u200D' or '\u203F' <= c <= '\u2040'
+                or '\u2070' <= c <= '\u218F' or '\u2C00' <= c <= '\u2FEF'
+                or '\u3001' <= c <= '\uD7FF' or '\uF900' <= c <= '\uFDCF'
+                or '\uFDF0' <= c <= '\uFFFD'):
+            if new_chars is None:
+                new_chars = list(key)
+            new_chars[i] = "_"
+
+    if new_chars is None:
+        return key
+    else:
+        return "".join(new_chars)
+
+
 class JSONAsXML:
     # TODO: add CDATA and escape keys
     def __init__(self, source, header: str = _XML_HEADER,
                  root_tag: str = "root", list_element: str = "list_element",
-                 typed: bool = False):
+                 typed: bool = False, formatted: bool = True):
         self._source = source
         self._header = header
         self._root_tag = root_tag
         self._list_element = list_element
         self._typed = typed
+        if formatted:
+            self._spaces = "    "
+        else:
+            self._spaces = ""
 
     def __iter__(self):
         yield self._header
@@ -433,7 +505,7 @@ class JSONAsXML:
                         # if cur_state == LexerToken.BEGIN_OBJECT, was added
                         # by key
                     cur_key = keys_stack[-1]
-                    yield "{}<{}>".format(tab * "    ", cur_key)
+                    yield "{}<{}>".format(tab * self._spaces, cur_key)
                 tab += 1
                 states_stack.append(token_type)
             elif (token_type == LexerToken.END_OBJECT
@@ -442,10 +514,10 @@ class JSONAsXML:
                 if states_stack:  # we have to close parent tag
                     previous_key = keys_stack.pop()
                     tab -= 1
-                    yield "{}</{}>".format(tab * "    ", previous_key)
+                    yield "{}</{}>".format(tab * self._spaces, previous_key)
             elif token_type == ParserToken.KEY:
                 assert states_stack[-1] == LexerToken.BEGIN_OBJECT
-                key = t[1]
+                key = _escape_tag(t[1])
                 keys_stack.append(key)
             else:  # a value
                 cur_state = states_stack[-1]
@@ -459,19 +531,20 @@ class JSONAsXML:
                     if self._typed:
                         value_type = "string"
                         if value:
-                            value = self._escape_value(value)
+                            value = _escape_value(value)
                             yield """{0}<{1} type="{2}">{3}</{1}>""".format(
-                                tab * "    ", cur_key, value_type, value)
+                                tab * self._spaces, cur_key, value_type, value)
                         else:
                             yield """{0}<{1} type="{2}"/>""".format(
-                                tab * "    ", cur_key, value_type)
+                                tab * self._spaces, cur_key, value_type)
                     else:
                         if value:
-                            value = self._escape_value(value)
+                            value = _escape_value(value)
                             yield "{0}<{1}>{2}</{1}>".format(
-                                tab * "    ", cur_key, value)
+                                tab * self._spaces, cur_key, value)
                         else:
-                            yield "{0}<{1}/>".format(tab * "    ", cur_key)
+                            yield "{0}<{1}/>".format(tab * self._spaces,
+                                                     cur_key)
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
@@ -485,17 +558,10 @@ class JSONAsXML:
                         else:
                             raise Exception("Token type " + token_type)
                         yield """{0}<{1} type="{2}">{3}</{1}>""".format(
-                            tab * "    ", cur_key, value_type, value)
+                            tab * self._spaces, cur_key, value_type, value)
                     else:
-                        yield "{0}<{1}>{2}</{1}>".format(tab * "    ", cur_key,
+                        yield "{0}<{1}>{2}</{1}>".format(tab * self._spaces,
+                                                         cur_key,
                                                          value)
 
         yield "</{}>".format(self._root_tag)
-
-    def _escape_value(self, value):
-        if re.search(r"[<>&\"']", value):
-            if ']]>' in value:
-                value = value.replace(']]>', ']]]]><![CDATA[>')
-            return "<![CDATA[" + value + "]]>"
-        else:
-            return value
