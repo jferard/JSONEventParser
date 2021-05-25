@@ -560,8 +560,18 @@ class JSONAsXML:
                         yield """{0}<{1} type="{2}">{3}</{1}>""".format(
                             tab * self._spaces, cur_key, value_type, value)
                     else:
-                        yield "{0}<{1}>{2}</{1}>".format(tab * self._spaces,
-                                                         cur_key,
-                                                         value)
+                        yield "{0}<{1}>{2}</{1}>".format(
+                            tab * self._spaces, cur_key, value)
 
         yield "</{}>".format(self._root_tag)
+
+
+def json2xml(source, dest, **kwargs):
+    if kwargs.get("formatted", True):
+        for line in JSONAsXML(source, **kwargs):
+            dest.write(line + "\n")
+    else:
+        it = iter(JSONAsXML(source, **kwargs))
+        dest.write(next(it) + "\n")
+        for line in it:
+            dest.write(line)
