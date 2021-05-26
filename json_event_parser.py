@@ -478,19 +478,30 @@ class JSONAsXML:
                  root_tag: str = "root", list_element: str = "list_element",
                  typed: bool = False, formatted: bool = False):
         self._source = source
-        self._header = header
         self._root_tag = root_tag
         self._list_element = list_element
         self._typed = typed
         if formatted:
+            self._header = header + "\n"
+            self._start_tag = "{0}<{1}>\n"
+            self._end_tag = "{0}</{1}>\n"
+            self._typed_text = """{0}<{1} type="{2}">{3}</{1}>\n"""
+            self._typed_empty = """{0}<{1} type="{2}"/>\n"""
+            self._text = "{0}<{1}>{2}</{1}>\n"
             self._spaces = "    "
         else:
+            self._header = header
+            self._start_tag = "<{1}>"
+            self._end_tag = "</{1}>"
+            self._typed_text = """<{1} type="{2}">{3}</{1}>"""
+            self._typed_empty = """<{1} type="{2}"/>"""
+            self._text = "<{1}>{2}</{1}>"
             self._spaces = ""
 
     def __iter__(self):
         yield self._header
-        yield "<{}>".format(self._root_tag)
-        tab = 0
+        tab_count = 0
+        yield self._start_tag.format("", self._root_tag)
         states_stack = []
         keys_stack = []
         for t in JSONParser(self._source):
@@ -504,16 +515,18 @@ class JSONAsXML:
                         # if cur_state == LexerToken.BEGIN_OBJECT, was added
                         # by key
                     cur_key = keys_stack[-1]
-                    yield "{}<{}>".format(tab * self._spaces, cur_key)
-                tab += 1
+                    yield self._start_tag.format(tab_count * self._spaces,
+                                                 cur_key)
+                tab_count += 1
                 states_stack.append(token_type)
             elif (token_type == LexerToken.END_OBJECT
                   or token_type == LexerToken.END_ARRAY):
                 states_stack.pop()
                 if states_stack:  # we have to close parent tag
                     previous_key = keys_stack.pop()
-                    tab -= 1
-                    yield "{}</{}>".format(tab * self._spaces, previous_key)
+                    tab_count -= 1
+                    yield self._end_tag.format(tab_count * self._spaces,
+                                               previous_key)
             elif token_type == ParserToken.KEY:
                 assert states_stack[-1] == LexerToken.BEGIN_OBJECT
                 key = _escape_tag(t[1])
@@ -531,19 +544,20 @@ class JSONAsXML:
                         value_type = "string"
                         if value:
                             value = _escape_value(value)
-                            yield """{0}<{1} type="{2}">{3}</{1}>""".format(
-                                tab * self._spaces, cur_key, value_type, value)
+                            yield self._typed_text.format(
+                                tab_count * self._spaces, cur_key, value_type,
+                                value)
                         else:
-                            yield """{0}<{1} type="{2}"/>""".format(
-                                tab * self._spaces, cur_key, value_type)
+                            yield self._typed_empty.format(
+                                tab_count * self._spaces, cur_key, value_type)
                     else:
                         if value:
                             value = _escape_value(value)
-                            yield "{0}<{1}>{2}</{1}>".format(
-                                tab * self._spaces, cur_key, value)
+                            yield self._text.format(
+                                tab_count * self._spaces, cur_key, value)
                         else:
-                            yield "{0}<{1}/>".format(tab * self._spaces,
-                                                     cur_key)
+                            yield self._text.format(tab_count * self._spaces,
+                                                    cur_key)
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
@@ -556,13 +570,14 @@ class JSONAsXML:
                             value_type = "null"
                         else:
                             raise Exception("Token type " + token_type)
-                        yield """{0}<{1} type="{2}">{3}</{1}>""".format(
-                            tab * self._spaces, cur_key, value_type, value)
+                        yield self._typed_text.format(
+                            tab_count * self._spaces, cur_key, value_type,
+                            value)
                     else:
-                        yield "{0}<{1}>{2}</{1}>".format(
-                            tab * self._spaces, cur_key, value)
+                        yield self._text.format(
+                            tab_count * self._spaces, cur_key, value)
 
-        yield "</{}>".format(self._root_tag)
+        yield self._end_tag.format("", self._root_tag)
 
 
 def json2xml(source, dest, **kwargs):
