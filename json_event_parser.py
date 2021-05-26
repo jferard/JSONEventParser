@@ -482,21 +482,22 @@ class JSONAsXML:
         self._root_tag = root_tag
         self._list_element = list_element
         self._typed = typed
+        self._header = header + "\n"
         if formatted:
-            self._header = header + "\n"
             self._start_tag = "{0}<{1}>\n"
             self._end_tag = "{0}</{1}>\n"
             self._typed_text = """{0}<{1} type="{2}">{3}</{1}>\n"""
             self._typed_empty = """{0}<{1} type="{2}"/>\n"""
             self._text = "{0}<{1}>{2}</{1}>\n"
+            self._empty = "{0}<{1}/>\n"
             self._tabs = [i * "    " for i in range(10)]
         else:
-            self._header = header
             self._start_tag = "<{1}>"
             self._end_tag = "</{1}>"
             self._typed_text = """<{1} type="{2}">{3}</{1}>"""
             self._typed_empty = """<{1} type="{2}"/>"""
             self._text = "<{1}>{2}</{1}>"
+            self._empty = "<{1}/>"
             self._tabs = [None] * 10
 
     def __iter__(self):
@@ -563,7 +564,7 @@ class JSONAsXML:
                             value = _escape_value(value)
                             yield self._text.format(spaces, cur_key, value)
                         else:
-                            yield self._text.format(spaces, cur_key)
+                            yield self._empty.format(spaces, cur_key)
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
@@ -594,14 +595,22 @@ def json2xml(source, dest, **kwargs):
     """
     if kwargs.get("formatted", False):
         for line in JSONAsXML(source, **kwargs):
-            dest.write(line + "\n")
+            try:
+                dest.write(line + "\n")
+            except UnicodeError:
+                dest.write("**\n")
     else:
         it = iter(JSONAsXML(source, **kwargs))
         dest.write(next(it) + "\n")
         for line in it:
-            dest.write(line)
+            try:
+                dest.write(line)
+            except UnicodeError:
+                dest.write("**")
 
 
 if __name__ == "__main__":
     # TODO: improve me
-    json2xml(sys.argv[1], sys.argv[2])
+    with open(sys.argv[1], "r", encoding="utf-8") as source, \
+        open(sys.argv[2], "w", encoding="utf-8") as dest:
+        json2xml(source, dest)
