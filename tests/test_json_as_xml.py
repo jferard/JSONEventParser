@@ -28,7 +28,7 @@ class TestJSONAsXML(unittest.TestCase):
     def test_xml(self):
         source = StringIO(
             '{"a": [-1, 2.0, {"b": -0.7e10, "column":["x", "y"]}], "x": 12, "y": true, "z": null}')
-        it = iter(JSONAsXML(source, formatted=False))
+        it = iter(JSONAsXML(source))
         actual = next(it) + "\n" + "".join(it)
         self.assertEqual("""<?xml version="1.0" encoding="utf-8"?>
 <root><a><list_element>-1</list_element><list_element>2.0</list_element><list_element><b>-0.7e10</b><column><list_element>x</list_element><list_element>y</list_element></column></list_element></a><x>12</x><y>True</y><z>None</z></root>""", actual)
@@ -53,7 +53,7 @@ class TestJSONAsXML(unittest.TestCase):
         with open(self._get_path(json), "r", encoding="utf-8") as source, \
                 open(self._get_path(xml), "r", encoding="utf-8") as expected:
             self.assertEqual(expected.read(),
-                             "\n".join(JSONAsXML(source, typed=True)))
+                             "\n".join(JSONAsXML(source, typed=True, formatted=True)))
 
     def _get_path(self, fname):
         return os.path.join(os.path.dirname(__file__), "files", fname)

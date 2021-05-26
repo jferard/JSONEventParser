@@ -474,10 +474,9 @@ def _escape_tag(key):
 
 
 class JSONAsXML:
-    # TODO: add CDATA and escape keys
     def __init__(self, source, header: str = _XML_HEADER,
                  root_tag: str = "root", list_element: str = "list_element",
-                 typed: bool = False, formatted: bool = True):
+                 typed: bool = False, formatted: bool = False):
         self._source = source
         self._header = header
         self._root_tag = root_tag
@@ -567,7 +566,14 @@ class JSONAsXML:
 
 
 def json2xml(source, dest, **kwargs):
-    if kwargs.get("formatted", True):
+    """
+    Convert JSON to XML
+    :param source:
+    :param dest:
+    :param kwargs:
+    :return:
+    """
+    if kwargs.get("formatted", False):
         for line in JSONAsXML(source, **kwargs):
             dest.write(line + "\n")
     else:
