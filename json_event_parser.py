@@ -19,6 +19,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import sys
 from enum import Enum
 
 # https://datatracker.ietf.org/doc/html/rfc8259
@@ -488,7 +489,7 @@ class JSONAsXML:
             self._typed_text = """{0}<{1} type="{2}">{3}</{1}>\n"""
             self._typed_empty = """{0}<{1} type="{2}"/>\n"""
             self._text = "{0}<{1}>{2}</{1}>\n"
-            self._spaces = "    "
+            self._tabs = [i * "    " for i in range(10)]
         else:
             self._header = header
             self._start_tag = "<{1}>"
@@ -496,11 +497,12 @@ class JSONAsXML:
             self._typed_text = """<{1} type="{2}">{3}</{1}>"""
             self._typed_empty = """<{1} type="{2}"/>"""
             self._text = "<{1}>{2}</{1}>"
-            self._spaces = ""
+            self._tabs = [None] * 10
 
     def __iter__(self):
         yield self._header
         tab_count = 0
+        spaces = ""
         yield self._start_tag.format("", self._root_tag)
         states_stack = []
         keys_stack = []
@@ -515,9 +517,16 @@ class JSONAsXML:
                         # if cur_state == LexerToken.BEGIN_OBJECT, was added
                         # by key
                     cur_key = keys_stack[-1]
-                    yield self._start_tag.format(tab_count * self._spaces,
-                                                 cur_key)
+                    yield self._start_tag.format(spaces, cur_key)
                 tab_count += 1
+                lt = len(self._tabs)
+                if tab_count == lt:
+                    if self._tabs[0] is None:
+                        self._tabs.extend(self._tabs)
+                    else:
+                        self._tabs.extend(
+                            [i * "    " for i in range(lt, 2 * lt)])
+                spaces = self._tabs[tab_count]
                 states_stack.append(token_type)
             elif (token_type == LexerToken.END_OBJECT
                   or token_type == LexerToken.END_ARRAY):
@@ -525,8 +534,8 @@ class JSONAsXML:
                 if states_stack:  # we have to close parent tag
                     previous_key = keys_stack.pop()
                     tab_count -= 1
-                    yield self._end_tag.format(tab_count * self._spaces,
-                                               previous_key)
+                    spaces = self._tabs[tab_count]
+                    yield self._end_tag.format(spaces, previous_key)
             elif token_type == ParserToken.KEY:
                 assert states_stack[-1] == LexerToken.BEGIN_OBJECT
                 key = _escape_tag(t[1])
@@ -545,19 +554,16 @@ class JSONAsXML:
                         if value:
                             value = _escape_value(value)
                             yield self._typed_text.format(
-                                tab_count * self._spaces, cur_key, value_type,
-                                value)
+                                spaces, cur_key, value_type, value)
                         else:
                             yield self._typed_empty.format(
-                                tab_count * self._spaces, cur_key, value_type)
+                                spaces, cur_key, value_type)
                     else:
                         if value:
                             value = _escape_value(value)
-                            yield self._text.format(
-                                tab_count * self._spaces, cur_key, value)
+                            yield self._text.format(spaces, cur_key, value)
                         else:
-                            yield self._text.format(tab_count * self._spaces,
-                                                    cur_key)
+                            yield self._text.format(spaces, cur_key)
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
@@ -571,11 +577,9 @@ class JSONAsXML:
                         else:
                             raise Exception("Token type " + token_type)
                         yield self._typed_text.format(
-                            tab_count * self._spaces, cur_key, value_type,
-                            value)
+                            spaces, cur_key, value_type, value)
                     else:
-                        yield self._text.format(
-                            tab_count * self._spaces, cur_key, value)
+                        yield self._text.format(spaces, cur_key, value)
 
         yield self._end_tag.format("", self._root_tag)
 
@@ -596,3 +600,8 @@ def json2xml(source, dest, **kwargs):
         dest.write(next(it) + "\n")
         for line in it:
             dest.write(line)
+
+
+if __name__ == "__main__":
+    # TODO: improve me
+    json2xml(sys.argv[1], sys.argv[2])
