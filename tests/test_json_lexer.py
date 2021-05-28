@@ -40,8 +40,11 @@ class TestJSONLexer(unittest.TestCase):
 
     def test_wrong_escape(self):
         source = StringIO('"\\x"')
-        with self.assertRaises(JSONLexError):
+        with self.assertRaises(JSONLexError) as e:
             list(JSONLexer(source))
+
+        self.assertEqual("LexError: Unknown escaped char: `x` at 0:3",
+                         str(e.exception))
 
     def test_zero_number(self):
         source = StringIO('01')
@@ -51,18 +54,27 @@ class TestJSONLexer(unittest.TestCase):
 
     def test_missing_decimals(self):
         source = StringIO('0.')
-        with self.assertRaises(JSONLexError):
+        with self.assertRaises(JSONLexError) as e:
             list(JSONLexer(source))
+
+        self.assertEqual("LexError: Missing decimals `0.` at 0:2",
+                         str(e.exception))
 
     def test_missing_exp(self):
         source = StringIO('0.1e')
-        with self.assertRaises(JSONLexError):
+        with self.assertRaises(JSONLexError) as e:
             list(JSONLexer(source))
+
+        self.assertEqual("LexError: Missing exp `0.1e` at 0:4",
+                         str(e.exception))
 
     def test_wrong_token(self):
         source = StringIO('Wrong')
-        with self.assertRaises(JSONLexError):
+        with self.assertRaises(JSONLexError) as e:
             list(JSONLexer(source))
+
+        self.assertEqual("LexError: Unexpected char `W` at 0:1",
+                         str(e.exception))
 
     def test_spaces(self):
         source = StringIO('"a b c"')
@@ -114,16 +126,29 @@ class TestJSONLexer(unittest.TestCase):
                          list(JSONLexer(source)))
 
     def test_float_errs(self):
-        for number in ['10.5e-3.8', '10.5e-', '10.5e']:
+        for number, msg in [
+            ('10.5e-3.8', "LexError: Unexpected char `.` at 0:9"),
+            ('10.5e-', "LexError: Missing exp 10.5e- at 0:6"),
+            ('10.5e', "LexError: Missing exp `10.5e` at 0:5")
+        ]:
             source = StringIO(number)
-            with self.assertRaises(JSONLexError):
+            with self.assertRaises(JSONLexError) as e:
                 list(JSONLexer(source))
 
+            self.assertEqual(msg, str(e.exception))
+
     def test_word_errs(self):
-        for word in ["foo", "too", "noo", "zoo"]:
+        for word, msg in [
+            ("foo", "LexError: Expected `false` at 0:1"),
+            ("too", "LexError: Expected `true` at 0:1"),
+            ("noo", "LexError: Expected `null` at 0:1"),
+            ("zoo", "LexError: Unexpected char `z` at 0:1")
+        ]:
             source = StringIO(word)
-            with self.assertRaises(JSONLexError):
+            with self.assertRaises(JSONLexError) as e:
                 list(JSONLexer(source))
+
+            self.assertEqual(msg, str(e.exception))
 
     def test_other_escape(self):
         source = StringIO('"\\\"\\\\"')

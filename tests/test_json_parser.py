@@ -70,10 +70,95 @@ class TestJSONParser(unittest.TestCase):
             (LexerToken.BEGIN_ARRAY, None), (LexerToken.END_ARRAY, None)
         ], list(JSONParser(source)))
 
+    def test_empty_object(self):
+        source = StringIO(
+            '{ }')
+        self.assertEqual([
+            (LexerToken.BEGIN_OBJECT, None), (LexerToken.END_OBJECT, None)
+        ], list(JSONParser(source)))
+
+    def test_array_in_array(self):
+        source = StringIO(
+            '[[true]]')
+        self.assertEqual([
+            (LexerToken.BEGIN_ARRAY, None), (LexerToken.BEGIN_ARRAY, None),
+            (LexerToken.BOOLEAN_VALUE, True),
+            (LexerToken.END_ARRAY, None), (LexerToken.END_ARRAY, None)
+        ], list(JSONParser(source)))
+
     def test_parse_error(self):
         self.assertEqual("ParseError: err at 1:2",
                          str(JSONParseError("err", 1, 2)))
 
+    def test_array_colon(self):
+        source = StringIO(
+            '[:]')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.NAME_SEPARATOR: 20>, None)` as array element at 2:0",
+            str(e.exception))
+
+    def test_int_member(self):
+        source = StringIO(
+            '{1:2}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.INT_VALUE: 4>, '1')` as object member at 3:0",
+            str(e.exception))
+
+    def test_missing_comma(self):
+        source = StringIO(
+            '[3 4]')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.INT_VALUE: 4>, '4')` in array, expected `LexerToken.VALUE_SEPARATOR` at 6:0",
+            str(e.exception))
+
+    def test_missing_sep(self):
+        source = StringIO(
+            '{"a" 4}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.INT_VALUE: 4>, '4')`, expected LexerToken.NAME_SEPARATOR at 7:0",
+            str(e.exception))
+
+    def test_missing_value(self):
+        source = StringIO(
+            '{"a":}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.END_OBJECT: 11>, None)` as member value at 6:0",
+            str(e.exception))
+
+    def test_missing_sep(self):
+        source = StringIO(
+            '{"a": 1 "b": 2}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.STRING: 3>, 'b')` in object at 12:0",
+            str(e.exception))
+
+    def test_missing_sep2(self):
+        source = StringIO(
+            '{"a" 1}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.INT_VALUE: 4>, '1')`, expected LexerToken.NAME_SEPARATOR at 7:0",
+            str(e.exception))
 
 if __name__ == "__main__":
     unittest.main()

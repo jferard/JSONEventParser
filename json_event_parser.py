@@ -121,11 +121,11 @@ class JSONLexer:
                         yield LexerToken.INT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC:
                         if buf[-1] == ".":
-                            self._lex_error("Missing decimals {}", buf)
+                            self._lex_error("Missing decimals `{}`", buf)
                         yield LexerToken.FLOAT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC_EXP:
                         if buf[-1] == "e":
-                            self._lex_error("Missing exp {}", buf)
+                            self._lex_error("Missing exp `{}`", buf)
                         else:
                             yield LexerToken.FLOAT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC_EXP_MINUS:
@@ -184,7 +184,7 @@ class JSONLexer:
                     sub_state = LexerState.NONE
                     buf = ""
                 else:
-                    self._lex_error("Unexpected char {}", next_char)
+                    self._lex_error("Unexpected char `{}`", next_char)
             elif state == LexerState.NUMBER:  # 6. Numbers
                 if sub_state == LexerState.NEG_NUMBER:
                     if next_char == "0":
@@ -275,7 +275,7 @@ class JSONLexer:
                         sub_state = LexerState.UNICODE
                         sub_buf = []
                     else:
-                        self._lex_error("Escaped char: {}", next_char)
+                        self._lex_error("Unknown escaped char: `{}`", next_char)
                 elif sub_state == LexerState.UNICODE:
                     sub_buf += next_char
                     if len(sub_buf) == 4:
@@ -351,7 +351,7 @@ class JSONParser:
                         LexerToken.BOOLEAN_VALUE, LexerToken.NULL_VALUE,
                         LexerToken.INT_VALUE, LexerToken.FLOAT_VALUE,
                         LexerToken.STRING):
-                    self._parse_error(t)
+                    self._parse_error("Unexpected token `{}`", t)
             elif state == ParserState.IN_ARRAY:
                 if t[0] == LexerToken.END_ARRAY:
                     yield t
@@ -370,7 +370,8 @@ class JSONParser:
                     states.append(ParserState.IN_ARRAY_SEP)
                     state = ParserState.IN_OBJECT
                 else:
-                    self._parse_error(t)
+                    self._parse_error(
+                        "Unexpected token `{}` as array element", t)
             elif state == ParserState.IN_ARRAY_SEP:
                 if t[0] == LexerToken.END_ARRAY:
                     yield t
@@ -378,7 +379,9 @@ class JSONParser:
                 elif t[0] == LexerToken.VALUE_SEPARATOR:
                     state = ParserState.IN_ARRAY
                 else:
-                    self._parse_error(t)
+                    self._parse_error(
+                        "Unexpected token `{}` in array, expected `{}`", t,
+                        LexerToken.VALUE_SEPARATOR)
             elif state == ParserState.IN_OBJECT:
                 if t[0] == LexerToken.END_OBJECT:
                     yield t
@@ -387,12 +390,14 @@ class JSONParser:
                     yield ParserToken.KEY, t[1]
                     state = ParserState.IN_OBJECT_MEMBER
                 else:
-                    self._parse_error(t)
+                    self._parse_error(
+                        "Unexpected token `{}` as object member", t)
             elif state == ParserState.IN_OBJECT_MEMBER:
                 if t[0] == LexerToken.NAME_SEPARATOR:
                     state = ParserState.IN_OBJECT_MEMBER_SEP
                 else:
-                    self._parse_error(t)
+                    self._parse_error("Unexpected token `{}`, expected {}", t,
+                                      LexerToken.NAME_SEPARATOR)
             elif state == ParserState.IN_OBJECT_MEMBER_SEP:
                 if t[0] in (LexerToken.BOOLEAN_VALUE, LexerToken.NULL_VALUE,
                             LexerToken.INT_VALUE, LexerToken.FLOAT_VALUE,
@@ -408,7 +413,8 @@ class JSONParser:
                     states.append(ParserState.IN_OBJECT_SEP)
                     state = ParserState.IN_OBJECT
                 else:
-                    self._parse_error(t)
+                    self._parse_error(
+                        "Unexpected token `{}` as member value", t)
             elif state == ParserState.IN_OBJECT_SEP:
                 if t[0] == LexerToken.END_OBJECT:
                     yield t
@@ -416,9 +422,11 @@ class JSONParser:
                 elif t[0] == LexerToken.VALUE_SEPARATOR:
                     state = ParserState.IN_OBJECT
                 else:
-                    self._parse_error(t)
+                    self._parse_error("Unexpected token `{}` in object", t)
 
-    def _parse_error(self, msg: Any):
+    def _parse_error(self, msg: Any, *parameters):
+        if parameters:
+            msg = msg.format(*parameters)
         raise JSONParseError(msg, self._lex_json.column,
                              self._lex_json.line)
 
