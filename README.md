@@ -4,6 +4,9 @@ Copyright (C) 2021 J. Férard <https://github.com/jferard>
 
 License: GPLv3
 
+[![Build Status](https://travis-ci.com/jferard/JSONEventParser.svg?branch=main)](https://travis-ci.com/jferard/JSONEventParser)
+[![codecov](https://codecov.io/gh/jferard/JSONEventParser/branch/main/graph/badge.svg)](https://codecov.io/gh/jferard/JSONEventParser)
+
 # Summary
 JSON Event Parser is a toy project written to convert JSON files to XML without
 the need to load the whole JSON object into memory. It relies on three elements :
