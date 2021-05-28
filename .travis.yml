@@ -1,0 +1,21 @@
+# py4lo
+language: python
+
+python:
+  - "3.7"
+
+cache: pip
+
+# command to run tests and install dependencies
+install:
+  - pip install --upgrade pip
+  - pip install --upgrade pytest py codecov pytest-cov flake8
+  - pytest --version # pytest-cov
+
+
+# script
+script:
+  - python3 -m pytest --cov-report term-missing --cov=json_event_parser && python3 -m pytest --cov-report term-missing --cov-append --doctest-modules json_event_parser.py --cov=json_event_parser && flake8 json_event_parser.py
+
+after_success:
+  - codecov
