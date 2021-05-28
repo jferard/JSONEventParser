@@ -425,6 +425,9 @@ class JSONParser:
                 else:
                     self._parse_error("Unexpected token `{}` in object", t)
 
+        if state != ParserState.NONE:
+            self._parse_error("End of file (current state = `{}`)", state)
+
     def _parse_error(self, msg: Any, *parameters):
         if parameters:
             msg = msg.format(*parameters)

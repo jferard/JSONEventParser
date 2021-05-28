@@ -170,5 +170,16 @@ class TestJSONParser(unittest.TestCase):
             "ParseError: Unexpected token `(<LexerToken.END_OBJECT: 11>, None)` at 1:0",
             str(e.exception))
 
+    def test_unclosed(self):
+        source = StringIO(
+            '{')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: End of file (current state = `ParserState.IN_OBJECT`) at 1:0",
+            str(e.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
