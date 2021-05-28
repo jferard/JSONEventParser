@@ -160,5 +160,15 @@ class TestJSONParser(unittest.TestCase):
             "ParseError: Unexpected token `(<LexerToken.INT_VALUE: 4>, '1')`, expected LexerToken.NAME_SEPARATOR at 7:0",
             str(e.exception))
 
+    def test_close(self):
+        source = StringIO(
+            '}')
+        with self.assertRaises(JSONParseError) as e:
+            list(JSONParser(source))
+
+        self.assertEqual(
+            "ParseError: Unexpected token `(<LexerToken.END_OBJECT: 11>, None)` at 1:0",
+            str(e.exception))
+
 if __name__ == "__main__":
     unittest.main()

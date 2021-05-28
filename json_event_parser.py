@@ -275,7 +275,8 @@ class JSONLexer:
                         sub_state = LexerState.UNICODE
                         sub_buf = []
                     else:
-                        self._lex_error("Unknown escaped char: `{}`", next_char)
+                        self._lex_error(
+                            "Unknown escaped char: `{}`", next_char)
                 elif sub_state == LexerState.UNICODE:
                     sub_buf += next_char
                     if len(sub_buf) == 4:
@@ -443,10 +444,8 @@ _ROOT_TAG = "root"
 
 def _escape_value(value):
     """
-    Use CDATA.
+    Use CDATA if necessary
 
-    >>> _escape_value("test")
-    'test'
     >>> _escape_value("te&t")
     '<![CDATA[te&t]]>'
 
@@ -603,7 +602,7 @@ class JSONAsXML:
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
-                            value_type = "float"
+                            value_type = "int"
                         elif token_type == LexerToken.FLOAT_VALUE:
                             value_type = "float"
                         elif token_type == LexerToken.BOOLEAN_VALUE:

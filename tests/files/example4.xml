@@ -20,16 +20,16 @@
                     <useJSP type="boolean">False</useJSP>
                     <jspListTemplate type="string">listTemplate.jsp</jspListTemplate>
                     <jspFileTemplate type="string">articleTemplate.jsp</jspFileTemplate>
-                    <cachePackageTagsTrack type="float">200</cachePackageTagsTrack>
-                    <cachePackageTagsStore type="float">200</cachePackageTagsStore>
-                    <cachePackageTagsRefresh type="float">60</cachePackageTagsRefresh>
-                    <cacheTemplatesTrack type="float">100</cacheTemplatesTrack>
-                    <cacheTemplatesStore type="float">50</cacheTemplatesStore>
-                    <cacheTemplatesRefresh type="float">15</cacheTemplatesRefresh>
-                    <cachePagesTrack type="float">200</cachePagesTrack>
-                    <cachePagesStore type="float">100</cachePagesStore>
-                    <cachePagesRefresh type="float">10</cachePagesRefresh>
-                    <cachePagesDirtyRead type="float">10</cachePagesDirtyRead>
+                    <cachePackageTagsTrack type="int">200</cachePackageTagsTrack>
+                    <cachePackageTagsStore type="int">200</cachePackageTagsStore>
+                    <cachePackageTagsRefresh type="int">60</cachePackageTagsRefresh>
+                    <cacheTemplatesTrack type="int">100</cacheTemplatesTrack>
+                    <cacheTemplatesStore type="int">50</cacheTemplatesStore>
+                    <cacheTemplatesRefresh type="int">15</cacheTemplatesRefresh>
+                    <cachePagesTrack type="int">200</cachePagesTrack>
+                    <cachePagesStore type="int">100</cachePagesStore>
+                    <cachePagesRefresh type="int">10</cachePagesRefresh>
+                    <cachePagesDirtyRead type="int">10</cachePagesDirtyRead>
                     <searchEngineListTemplate type="string">forSearchEnginesList.htm</searchEngineListTemplate>
                     <searchEngineFileTemplate type="string">forSearchEngines.htm</searchEngineFileTemplate>
                     <searchEngineRobotsDb type="string">WEB-INF/robots.db</searchEngineRobotsDb>
@@ -43,11 +43,11 @@
                     <dataStorePassword type="string">dataStoreTestQuery</dataStorePassword>
                     <dataStoreTestQuery type="string"><![CDATA[SET NOCOUNT ON;select test='test';]]></dataStoreTestQuery>
                     <dataStoreLogFile type="string">/usr/local/tomcat/logs/datastore.log</dataStoreLogFile>
-                    <dataStoreInitConns type="float">10</dataStoreInitConns>
-                    <dataStoreMaxConns type="float">100</dataStoreMaxConns>
-                    <dataStoreConnUsageLimit type="float">100</dataStoreConnUsageLimit>
+                    <dataStoreInitConns type="int">10</dataStoreInitConns>
+                    <dataStoreMaxConns type="int">100</dataStoreMaxConns>
+                    <dataStoreConnUsageLimit type="int">100</dataStoreConnUsageLimit>
                     <dataStoreLogLevel type="string">debug</dataStoreLogLevel>
-                    <maxUrlLength type="float">500</maxUrlLength>
+                    <maxUrlLength type="int">500</maxUrlLength>
                 </init-param>
             </li>
             <li>
@@ -71,17 +71,17 @@
                 <servlet-class type="string">org.cofax.cms.CofaxToolsServlet</servlet-class>
                 <init-param>
                     <templatePath type="string">toolstemplates/</templatePath>
-                    <log type="float">1</log>
+                    <log type="int">1</log>
                     <logLocation type="string">/usr/local/tomcat/logs/CofaxTools.log</logLocation>
                     <logMaxSize type="string"/>
-                    <dataLog type="float">1</dataLog>
+                    <dataLog type="int">1</dataLog>
                     <dataLogLocation type="string">/usr/local/tomcat/logs/dataLog.log</dataLogLocation>
                     <dataLogMaxSize type="string"/>
                     <removePageCache type="string"><![CDATA[/content/admin/remove?cache=pages&id=]]></removePageCache>
                     <removeTemplateCache type="string"><![CDATA[/content/admin/remove?cache=templates&id=]]></removeTemplateCache>
                     <fileTransferFolder type="string">/usr/local/tomcat/webapps/content/fileTransferFolder</fileTransferFolder>
-                    <lookInContext type="float">1</lookInContext>
-                    <adminGroupID type="float">4</adminGroupID>
+                    <lookInContext type="int">1</lookInContext>
+                    <adminGroupID type="int">4</adminGroupID>
                     <betaServer type="boolean">True</betaServer>
                 </init-param>
             </li>

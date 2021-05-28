@@ -5,23 +5,23 @@
         <window>
             <title type="string">Sample Konfabulator Widget</title>
             <name type="string">main_window</name>
-            <width type="float">500</width>
-            <height type="float">500</height>
+            <width type="int">500</width>
+            <height type="int">500</height>
         </window>
         <image>
             <src type="string">Images/Sun.png</src>
             <name type="string">sun1</name>
-            <hOffset type="float">250</hOffset>
-            <vOffset type="float">250</vOffset>
+            <hOffset type="int">250</hOffset>
+            <vOffset type="int">250</vOffset>
             <alignment type="string">center</alignment>
         </image>
         <text>
             <data type="string">Click Here</data>
-            <size type="float">36</size>
+            <size type="int">36</size>
             <style type="string">bold</style>
             <name type="string">text1</name>
-            <hOffset type="float">250</hOffset>
-            <vOffset type="float">100</vOffset>
+            <hOffset type="int">250</hOffset>
+            <vOffset type="int">100</vOffset>
             <alignment type="string">center</alignment>
             <onMouseUp type="string">sun1.opacity = (sun1.opacity / 100) * 90;</onMouseUp>
         </text>

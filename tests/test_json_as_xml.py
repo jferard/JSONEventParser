@@ -19,9 +19,9 @@
 
 import os
 import unittest
-from io import StringIO
+from io import StringIO, BytesIO, TextIOWrapper
 
-from json_event_parser import JSONAsXML
+from json_event_parser import JSONAsXML, _escape_value, _escape_tag, json2xml
 
 
 class TestJSONAsXML(unittest.TestCase):
@@ -56,8 +56,74 @@ class TestJSONAsXML(unittest.TestCase):
                              "".join(JSONAsXML(source,
                                                typed=True, formatted=True)))
 
+    def test_escape_value(self):
+        for value, escaped_value in [
+            ("test", 'test'),
+            ("te&t", '<![CDATA[te&t]]>'),
+            ("te']]>t", "<![CDATA[te']]]]><![CDATA[>t]]>")
+        ]:
+            self.assertEqual(escaped_value, _escape_value(value))
+
+    def test_escape_tag(self):
+        for tag, escaped_tag in [
+            ("", '_'),
+            ("&tag", "_tag"),
+            ("ta&g", "ta_g")
+        ]:
+            self.assertEqual(escaped_tag, _escape_tag(tag))
+
     def _get_path(self, fname):
         return os.path.join(os.path.dirname(__file__), "files", fname)
+
+    def test_tabs(self):
+        source = StringIO(
+            '{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":1}}}}}}}}}}}}}}}')
+        dest = StringIO()
+        json2xml(source, dest, formatted=True)
+        self.assertEqual(
+            "                                                            <a>1</a>",
+            max(dest.getvalue().split("\n"), key=len))
+
+    def test_tab_None(self):
+        source = StringIO(
+            '{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":{"a":1}}}}}}}}}}}}}}}')
+        dest = StringIO()
+        json2xml(source, dest, formatted=False)
+        self.assertEqual(
+            '<?xml version="1.0" encoding="utf-8"?>\n<root><a><a><a><a><a><a><a><a><a><a><a><a><a><a><a>1</a></a></a></a></a></a></a></a></a></a></a></a></a></a></a></root>',
+            dest.getvalue())
+
+    def test_empty_value(self):
+        source = StringIO(
+            '{"a":""}')
+        dest = StringIO()
+        json2xml(source, dest, formatted=False)
+        self.assertEqual(
+            '<?xml version="1.0" encoding="utf-8"?>\n<root><a/></root>',
+            dest.getvalue())
+
+    def test_int_value(self):
+        source = StringIO(
+            '{"a":1}')
+        dest = StringIO()
+        json2xml(source, dest, formatted=False, typed=True)
+        self.assertEqual(
+            '<?xml version="1.0" encoding="utf-8"?>\n<root><a type="int">1</a></root>',
+            dest.getvalue())
+
+    def test_float_value(self):
+        source = StringIO(
+            '{"a":1.5}')
+        dest = StringIO()
+        json2xml(source, dest, formatted=False, typed=True)
+        self.assertEqual(
+            '<?xml version="1.0" encoding="utf-8"?>\n<root><a type="float">1.5</a></root>',
+            dest.getvalue())
+
+    def test_unicode(self):
+        source = StringIO('{"a":"\\ud83d"}')
+        dest = StringIO()
+        json2xml(source, dest)
 
 
 if __name__ == '__main__':
