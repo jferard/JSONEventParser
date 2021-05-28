@@ -5,18 +5,18 @@
         <value type="string">File</value>
         <popup>
             <menuitem>
-                <list_element>
+                <li>
                     <value type="string">New</value>
                     <onclick type="string">CreateNewDoc()</onclick>
-                </list_element>
-                <list_element>
+                </li>
+                <li>
                     <value type="string">Open</value>
                     <onclick type="string">OpenDoc()</onclick>
-                </list_element>
-                <list_element>
+                </li>
+                <li>
                     <value type="string">Close</value>
                     <onclick type="string">CloseDoc()</onclick>
-                </list_element>
+                </li>
             </menuitem>
         </popup>
     </menu>

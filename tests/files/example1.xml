@@ -14,8 +14,8 @@
                     <GlossDef>
                         <para type="string">A meta-markup language, used to create markup languages such as DocBook.</para>
                         <GlossSeeAlso>
-                            <list_element type="string">GML</list_element>
-                            <list_element type="string">XML</list_element>
+                            <li type="string">GML</li>
+                            <li type="string">XML</li>
                         </GlossSeeAlso>
                     </GlossDef>
                     <GlossSee type="string">markup</GlossSee>

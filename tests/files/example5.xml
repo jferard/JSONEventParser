@@ -3,76 +3,76 @@
     <menu>
         <header type="string">SVG Viewer</header>
         <items>
-            <list_element>
+            <li>
                 <id type="string">Open</id>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">OpenNew</id>
                 <label type="string">Open New</label>
-            </list_element>
-            <list_element type="null">None</list_element>
-            <list_element>
+            </li>
+            <li type="null">None</li>
+            <li>
                 <id type="string">ZoomIn</id>
                 <label type="string">Zoom In</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">ZoomOut</id>
                 <label type="string">Zoom Out</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">OriginalView</id>
                 <label type="string">Original View</label>
-            </list_element>
-            <list_element type="null">None</list_element>
-            <list_element>
+            </li>
+            <li type="null">None</li>
+            <li>
                 <id type="string">Quality</id>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">Pause</id>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">Mute</id>
-            </list_element>
-            <list_element type="null">None</list_element>
-            <list_element>
+            </li>
+            <li type="null">None</li>
+            <li>
                 <id type="string">Find</id>
                 <label type="string">Find...</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">FindAgain</id>
                 <label type="string">Find Again</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">Copy</id>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">CopyAgain</id>
                 <label type="string">Copy Again</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">CopySVG</id>
                 <label type="string">Copy SVG</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">ViewSVG</id>
                 <label type="string">View SVG</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">ViewSource</id>
                 <label type="string">View Source</label>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">SaveAs</id>
                 <label type="string">Save As</label>
-            </list_element>
-            <list_element type="null">None</list_element>
-            <list_element>
+            </li>
+            <li type="null">None</li>
+            <li>
                 <id type="string">Help</id>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <id type="string">About</id>
                 <label type="string">About Adobe CVG Viewer...</label>
-            </list_element>
+            </li>
         </items>
     </menu>
 </root>

@@ -17,7 +17,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import argparse
 import re
 import sys
 from enum import Enum
@@ -404,6 +404,8 @@ class JSONParser:
 
 
 _XML_HEADER = """<?xml version="1.0" encoding="utf-8"?>"""
+_LIST_ITEM_TAG = "li"
+_ROOT_TAG = "root"
 
 
 def _escape_value(value):
@@ -476,11 +478,11 @@ def _escape_tag(key):
 
 class JSONAsXML:
     def __init__(self, source, header: str = _XML_HEADER,
-                 root_tag: str = "root", list_element: str = "list_element",
+                 root_tag: str = _ROOT_TAG, list_item: str = _LIST_ITEM_TAG,
                  typed: bool = False, formatted: bool = False):
         self._source = source
         self._root_tag = root_tag
-        self._list_element = list_element
+        self._list_item = list_item
         self._typed = typed
         self._header = header + "\n"
         if formatted:
@@ -514,7 +516,7 @@ class JSONAsXML:
                 if states_stack:  # we have to open parent tag
                     cur_state = states_stack[-1]
                     if cur_state == LexerToken.BEGIN_ARRAY:
-                        keys_stack.append(self._list_element)
+                        keys_stack.append(self._list_item)
                         # if cur_state == LexerToken.BEGIN_OBJECT, was added
                         # by key
                     cur_key = keys_stack[-1]
@@ -544,7 +546,7 @@ class JSONAsXML:
             else:  # a value
                 cur_state = states_stack[-1]
                 if cur_state == LexerToken.BEGIN_ARRAY:
-                    keys_stack.append(self._list_element)
+                    keys_stack.append(self._list_item)
                     # if cur_state == LexerToken.BEGIN_OBJECT, was added
                     # by key
                 cur_key = keys_stack.pop()
@@ -593,24 +595,42 @@ def json2xml(source, dest, **kwargs):
     :param kwargs:
     :return:
     """
-    if kwargs.get("formatted", False):
-        for line in JSONAsXML(source, **kwargs):
-            try:
-                dest.write(line + "\n")
-            except UnicodeError:
-                dest.write("**\n")
-    else:
-        it = iter(JSONAsXML(source, **kwargs))
-        dest.write(next(it) + "\n")
-        for line in it:
-            try:
-                dest.write(line)
-            except UnicodeError:
-                dest.write("**")
+    for line in JSONAsXML(source, **kwargs):
+        try:
+            dest.write(line)
+        except UnicodeError:
+            dest.write(ascii(line))
+
+
+def _get_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description='Convert an JSON file to an XML file.')
+    parser.add_argument('infile', nargs='?',
+                        type=argparse.FileType('r', encoding="utf-8"),
+                        default=sys.stdin, help='a JSON file to convert')
+    parser.add_argument('outfile', nargs='?',
+                        type=argparse.FileType('w', encoding="utf-8"),
+                        default=sys.stdout, help='the output file')
+    parser.add_argument('-hd', '--header', default=_XML_HEADER,
+                        help='the header line', action='store')
+    parser.add_argument('-r', '--root', default=_ROOT_TAG,
+                        help='the root tag',
+                        action='store')
+    parser.add_argument('-li', '--list-item', default=_LIST_ITEM_TAG,
+                        help='the list item tag (default is <li> as in HTML',
+                        action='store')
+    parser.add_argument('-t', '--typed',
+                        help='tags are typed', action='store_true')
+    parser.add_argument('-f', '--formatted',
+                        help=(
+                            'format the XML (use with caution: '
+                            'huge files may be generated because of spaces)'),
+                        action='store_true')
+    return parser
 
 
 if __name__ == "__main__":
-    # TODO: improve me
-    with open(sys.argv[1], "r", encoding="utf-8") as source, \
-        open(sys.argv[2], "w", encoding="utf-8") as dest:
-        json2xml(source, dest)
+    args = _get_parser().parse_args()
+    json2xml(args.infile, args.outfile, header=args.header, root_tag=args.root,
+             list_item=args.list_item, typed=args.typed,
+             formatted=args.formatted)

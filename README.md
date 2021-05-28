@@ -25,16 +25,43 @@ http://lloyd.github.com/yajl/) (there is also a pure Python backend).
 
 # Usage
 
-Print the XML counterpart of a JSON file
+## Command line
 
-    with open("path/to/json/file", "r", encoding="utf-8") as source:
-        print("\n".join(JSONAsXML(source, typed=True)))
+```
+  usage: json_event_parser.py [-h] [-hd HEADER] [-r ROOT] [-li LIST_ITEM] [-t]
+                              [-f]
+                              [infile] [outfile]
+  
+  Convert an JSON file to an XML file.
+  
+  positional arguments:
+    infile                a JSON file to convert
+    outfile               the output file
+  
+  optional arguments:
+    -h, --help            show this help message and exit
+    -hd HEADER, --header HEADER
+                          the header line
+    -r ROOT, --root ROOT  the root tag
+    -li LIST_ITEM, --list-item LIST_ITEM
+                          the list item tag (default is <li> as in HTML
+    -t, --typed           tags are typed
+    -f, --formatted       format the XML (use with caution: huge files may be
+                          generated because of spaces)
+```
 
+
+## As a library
 Parse a JSON file
 
     with open("path/to/json/file", "r", encoding="utf-8") as source:
         for token, value in JSONParser(source):
             print(token, value)
+
+Print the XML counterpart of a JSON file
+
+    with open("path/to/json/file", "r", encoding="utf-8") as source:
+        print("\n".join(JSONAsXML(source, typed=True)))
 
 # Tests
 

@@ -2,7 +2,7 @@
 <root>
     <web-app>
         <servlet>
-            <list_element>
+            <li>
                 <servlet-name type="string">cofaxCDS</servlet-name>
                 <servlet-class type="string">org.cofax.cds.CDSServlet</servlet-class>
                 <init-param>
@@ -49,24 +49,24 @@
                     <dataStoreLogLevel type="string">debug</dataStoreLogLevel>
                     <maxUrlLength type="float">500</maxUrlLength>
                 </init-param>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <servlet-name type="string">cofaxEmail</servlet-name>
                 <servlet-class type="string">org.cofax.cds.EmailServlet</servlet-class>
                 <init-param>
                     <mailHost type="string">mail1</mailHost>
                     <mailHostOverride type="string">mail2</mailHostOverride>
                 </init-param>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <servlet-name type="string">cofaxAdmin</servlet-name>
                 <servlet-class type="string">org.cofax.cds.AdminServlet</servlet-class>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <servlet-name type="string">fileServlet</servlet-name>
                 <servlet-class type="string">org.cofax.cds.FileServlet</servlet-class>
-            </list_element>
-            <list_element>
+            </li>
+            <li>
                 <servlet-name type="string">cofaxTools</servlet-name>
                 <servlet-class type="string">org.cofax.cms.CofaxToolsServlet</servlet-class>
                 <init-param>
@@ -84,7 +84,7 @@
                     <adminGroupID type="float">4</adminGroupID>
                     <betaServer type="boolean">True</betaServer>
                 </init-param>
-            </list_element>
+            </li>
         </servlet>
         <servlet-mapping>
             <cofaxCDS type="string">/</cofaxCDS>
