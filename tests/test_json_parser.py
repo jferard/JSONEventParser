@@ -20,7 +20,8 @@
 import unittest
 from io import StringIO
 
-from json_event_parser import JSONParser, LexerToken, ParserToken
+from json_event_parser import JSONParser, LexerToken, ParserToken, \
+    JSONParseError
 
 
 class TestJSONParser(unittest.TestCase):
@@ -44,6 +45,34 @@ class TestJSONParser(unittest.TestCase):
             (LexerToken.END_OBJECT, None),
             (LexerToken.END_ARRAY, None),
             (LexerToken.END_OBJECT, None)], list(JSONParser(source)))
+
+    def test_parse_array(self):
+        source = StringIO(
+            '[-1, 2.0]')
+        self.assertEqual([
+            (LexerToken.BEGIN_ARRAY, None),
+            (LexerToken.INT_VALUE, '-1'),
+            (LexerToken.FLOAT_VALUE, '2.0'),
+            (LexerToken.END_ARRAY, None)
+        ], list(JSONParser(source)))
+
+    def test_parse_number(self):
+        source = StringIO(
+            '-1')
+        self.assertEqual([
+            (LexerToken.INT_VALUE, '-1')
+        ], list(JSONParser(source)))
+
+    def test_empty_array(self):
+        source = StringIO(
+            '[ ]')
+        self.assertEqual([
+            (LexerToken.BEGIN_ARRAY, None), (LexerToken.END_ARRAY, None)
+        ], list(JSONParser(source)))
+
+    def test_parse_error(self):
+        self.assertEqual("ParseError: err at 1:2",
+                         str(JSONParseError("err", 1, 2)))
 
 
 if __name__ == "__main__":

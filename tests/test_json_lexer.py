@@ -69,6 +69,67 @@ class TestJSONLexer(unittest.TestCase):
         self.assertEqual([(LexerToken.STRING, "a b c")],
                          list(JSONLexer(source)))
 
+    def test_lex_error(self):
+        self.assertEqual("LexError: err at 1:2", str(JSONLexError("err", 1, 2)))
+
+    def test_end_0(self):
+        source = StringIO(
+            '{"a": 0')
+        self.assertEqual([(LexerToken.BEGIN_OBJECT, None),
+                          (LexerToken.STRING, 'a'),
+                          (LexerToken.NAME_SEPARATOR, None),
+                          (LexerToken.INT_VALUE, '0')], list(JSONLexer(source)))
+
+    def test_end_10(self):
+        source = StringIO(
+            '{"a": 10')
+        self.assertEqual([(LexerToken.BEGIN_OBJECT, None),
+                          (LexerToken.STRING, 'a'),
+                          (LexerToken.NAME_SEPARATOR, None),
+                          (LexerToken.INT_VALUE, '10')],
+                         list(JSONLexer(source)))
+
+    def test_end_10_dot_5(self):
+        source = StringIO(
+            '{"a": 10.5')
+        self.assertEqual([(LexerToken.BEGIN_OBJECT, None),
+                          (LexerToken.STRING, 'a'),
+                          (LexerToken.NAME_SEPARATOR, None),
+                          (LexerToken.FLOAT_VALUE, '10.5')],
+                         list(JSONLexer(source)))
+
+    def test_end_10_dot_5_e_3(self):
+        source = StringIO(
+            '{"a": 10.5e3')
+        self.assertEqual([(LexerToken.BEGIN_OBJECT, None),
+                          (LexerToken.STRING, 'a'),
+                          (LexerToken.NAME_SEPARATOR, None),
+                          (LexerToken.FLOAT_VALUE, '10.5e3')],
+                         list(JSONLexer(source)))
+
+    def test_10_dot_5_e_minus_3(self):
+        source = StringIO(
+            '10.5e-3')
+        self.assertEqual([(LexerToken.FLOAT_VALUE, '10.5e-3')],
+                         list(JSONLexer(source)))
+
+    def test_float_errs(self):
+        for number in ['10.5e-3.8', '10.5e-', '10.5e']:
+            source = StringIO(number)
+            with self.assertRaises(JSONLexError):
+                list(JSONLexer(source))
+
+    def test_word_errs(self):
+        for word in ["foo", "too", "noo", "zoo"]:
+            source = StringIO(word)
+            with self.assertRaises(JSONLexError):
+                list(JSONLexer(source))
+
+    def test_other_escape(self):
+        source = StringIO('"\\\"\\\\"')
+        self.assertEqual([(LexerToken.STRING, '"\\')],
+                         list(JSONLexer(source)))
+
     def test_lex(self):
         source = StringIO(
             '{"a": [-1, 2.0, {"b": -0.7e10, "column":["x", "y"]}]}')

@@ -42,7 +42,10 @@ class JSONLexError(ValueError):
         self.column = column
 
     def __repr__(self):
-        return "{} at {}:{}".format(self.msg, self.line, self.column)
+        return "LexError: {} at {}:{}".format(self.msg, self.line, self.column)
+
+    def __str__(self):
+        return repr(self)
 
 
 WHITE_SPACES = " \t\r\n"
@@ -63,6 +66,7 @@ class LexerState(Enum):
     OTHER_NUMBER = 12
     NUMBER_FRAC = 21
     NUMBER_FRAC_EXP = 22
+    NUMBER_FRAC_EXP_MINUS = 23
 
     ESCAPE = 50
     UNICODE = 51
@@ -115,14 +119,17 @@ class JSONLexer:
                         yield LexerToken.INT_VALUE, "0"
                     elif sub_state == LexerState.OTHER_NUMBER:
                         yield LexerToken.INT_VALUE, buf
-                    elif sub_state == LexerState.OTHER_NUMBER:
-                        yield LexerToken.INT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC:
                         if buf[-1] == ".":
                             self._lex_error("Missing decimals {}", buf)
                         yield LexerToken.FLOAT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC_EXP:
                         if buf[-1] == "e":
+                            self._lex_error("Missing exp {}", buf)
+                        else:
+                            yield LexerToken.FLOAT_VALUE, buf
+                    elif sub_state == LexerState.NUMBER_FRAC_EXP_MINUS:
+                        if buf[-1] == "-":
                             self._lex_error("Missing exp {}", buf)
                         else:
                             yield LexerToken.FLOAT_VALUE, buf
@@ -209,11 +216,11 @@ class JSONLexer:
                         state = LexerState.NONE
                         sub_state = LexerState.NONE
                 elif sub_state == LexerState.NUMBER_FRAC:
-                    if next_char in "0123456789":
-                        buf += next_char
-                    elif next_char == "e" or next_char == "E":
+                    if next_char == "e" or next_char == "E":
                         sub_state = LexerState.NUMBER_FRAC_EXP
                         buf += "e"
+                    elif next_char in "0123456789":
+                        buf += next_char
                     else:
                         yield LexerToken.FLOAT_VALUE, buf
                         buf = None
@@ -221,6 +228,18 @@ class JSONLexer:
                         state = LexerState.NONE
                         sub_state = LexerState.NONE
                 elif sub_state == LexerState.NUMBER_FRAC_EXP:
+                    if next_char == "-":
+                        sub_state = LexerState.NUMBER_FRAC_EXP_MINUS
+                        buf += "-"
+                    elif next_char in "0123456789":
+                        buf += next_char
+                    else:
+                        yield LexerToken.FLOAT_VALUE, buf
+                        buf = None
+                        unget = next_char
+                        state = LexerState.NONE
+                        sub_state = LexerState.NONE
+                elif sub_state == LexerState.NUMBER_FRAC_EXP_MINUS:
                     if next_char in "0123456789":
                         buf += next_char
                     else:
@@ -229,6 +248,9 @@ class JSONLexer:
                         unget = next_char
                         state = LexerState.NONE
                         sub_state = LexerState.NONE
+                else:
+                    self._lex_error("Unexpected number state {}".format(
+                        sub_state))
             elif state == LexerState.STRING:  # 7. Strings
                 if sub_state == LexerState.ESCAPE:  # TODO: unicode
                     if next_char in "\"\\":
@@ -287,7 +309,11 @@ class JSONParseError(ValueError):
         self.msg = msg
 
     def __repr__(self):
-        return "{} at {}:{}".format(self.msg, self.line, self.column)
+        return "ParseError: {} at {}:{}".format(self.msg, self.line,
+                                                self.column)
+
+    def __str__(self):
+        return repr(self)
 
 
 class ParserState(Enum):
@@ -321,11 +347,10 @@ class JSONParser:
                 elif t[0] == LexerToken.BEGIN_OBJECT:
                     states.append(state)
                     state = ParserState.IN_OBJECT
-                elif t[0] in (LexerToken.BOOLEAN_VALUE, LexerToken.NULL_VALUE,
-                              LexerToken.INT_VALUE, LexerToken.FLOAT_VALUE,
-                              LexerToken.STRING):
-                    yield t
-                else:
+                elif t[0] not in (
+                        LexerToken.BOOLEAN_VALUE, LexerToken.NULL_VALUE,
+                        LexerToken.INT_VALUE, LexerToken.FLOAT_VALUE,
+                        LexerToken.STRING):
                     self._parse_error(t)
             elif state == ParserState.IN_ARRAY:
                 if t[0] == LexerToken.END_ARRAY:
