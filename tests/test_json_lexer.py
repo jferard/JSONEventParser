@@ -125,6 +125,16 @@ class TestJSONLexer(unittest.TestCase):
         self.assertEqual([(LexerToken.FLOAT_VALUE, '10.5e-3')],
                          list(JSONLexer(source)))
 
+    def test_neg_err(self):
+        for number, msg in [
+            ('-a', "LexError: Expected digit, got `a` at 0:2"),
+        ]:
+            source = StringIO(number)
+            with self.assertRaises(JSONLexError) as e:
+                list(JSONLexer(source))
+
+            self.assertEqual(msg, str(e.exception))
+
     def test_float_errs(self):
         for number, msg in [
             ('10.5e-3.8', "LexError: Unexpected char `.` at 0:9"),

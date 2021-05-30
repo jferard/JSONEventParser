@@ -193,6 +193,8 @@ class JSONLexer:
                     elif next_char in "123456789":
                         buf += next_char
                         sub_state = LexerState.OTHER_NUMBER
+                    else:
+                        self._lex_error("Expected digit, got `{}`", next_char)
                 elif sub_state == LexerState.ZERO_NUMBER:  # -0 or 0
                     if next_char == ".":
                         sub_state = LexerState.NUMBER_FRAC
@@ -204,11 +206,11 @@ class JSONLexer:
                         state = LexerState.NONE
                         sub_state = LexerState.NONE
                 elif sub_state == LexerState.OTHER_NUMBER:  # -[1-9] or [1-9]
-                    if next_char in "0123456789":
-                        buf += next_char
-                    elif next_char == ".":
+                    if next_char == ".":
                         sub_state = LexerState.NUMBER_FRAC
                         buf += "."
+                    elif next_char in "0123456789":
+                        buf += next_char
                     else:
                         yield LexerToken.INT_VALUE, buf
                         buf = None
