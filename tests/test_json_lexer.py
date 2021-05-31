@@ -138,7 +138,7 @@ class TestJSONLexer(unittest.TestCase):
     def test_float_errs(self):
         for number, msg in [
             ('10.5e-3.8', "LexError: Unexpected char `.` at 0:9"),
-            ('10.5e-', "LexError: Missing exp 10.5e- at 0:6"),
+            ('10.5e-', "LexError: Missing exp `10.5e-` at 0:6"),
             ('10.5e', "LexError: Missing exp `10.5e` at 0:5")
         ]:
             source = StringIO(number)
@@ -146,6 +146,14 @@ class TestJSONLexer(unittest.TestCase):
                 list(JSONLexer(source))
 
             self.assertEqual(msg, str(e.exception))
+
+    def test_unifinished_string(self):
+        source = StringIO('"foo')
+        with self.assertRaises(JSONLexError) as e:
+            list(JSONLexer(source))
+
+        self.assertEqual("LexError: Missing end quote `foo` at 0:4",
+                         str(e.exception))
 
     def test_word_errs(self):
         for word, msg in [

@@ -130,10 +130,11 @@ class JSONLexer:
                             yield LexerToken.FLOAT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC_EXP_MINUS:
                         if buf[-1] == "-":
-                            self._lex_error("Missing exp {}", buf)
+                            self._lex_error("Missing exp `{}`", buf)
                         else:
                             yield LexerToken.FLOAT_VALUE, buf
-
+                elif state == LexerState.STRING:  # unfinished string
+                    self._lex_error("Missing end quote `{}`", buf)
                 return
 
             self.column += 1
@@ -326,7 +327,7 @@ class ParserState(Enum):
     IN_ARRAY_SEP = 11
     IN_OBJECT = 12
     IN_OBJECT_MEMBER = 13
-    IN_OBJECT_MEMBER_SEP = 14
+    IN_OBJECT_MEMBER_VALUE = 14
     IN_OBJECT_SEP = 15
 
 
@@ -397,11 +398,11 @@ class JSONParser:
                         "Unexpected token `{}` as object member", t)
             elif state == ParserState.IN_OBJECT_MEMBER:
                 if t[0] == LexerToken.NAME_SEPARATOR:
-                    state = ParserState.IN_OBJECT_MEMBER_SEP
+                    state = ParserState.IN_OBJECT_MEMBER_VALUE
                 else:
                     self._parse_error("Unexpected token `{}`, expected {}", t,
                                       LexerToken.NAME_SEPARATOR)
-            elif state == ParserState.IN_OBJECT_MEMBER_SEP:
+            elif state == ParserState.IN_OBJECT_MEMBER_VALUE:
                 if t[0] in (LexerToken.BOOLEAN_VALUE, LexerToken.NULL_VALUE,
                             LexerToken.INT_VALUE, LexerToken.FLOAT_VALUE,
                             LexerToken.STRING):
