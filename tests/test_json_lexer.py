@@ -110,6 +110,19 @@ class TestJSONLexer(unittest.TestCase):
                           (LexerToken.FLOAT_VALUE, '10.5')],
                          list(JSONLexer(source)))
 
+    def test_end_10_dot_accolade(self):
+        for number, msg in [
+            ('[10.]', "LexError: Missing decimals `10.` at 0:5"),
+            ('[10e]', "LexError: Missing exp `10e` at 0:5"),
+            ('[10.1e]', "LexError: Missing exp `10.1e` at 0:7"),
+            ('[10.1e-]', "LexError: Missing exp `10.1e-` at 0:8"),
+        ]:
+            source = StringIO(number)
+            with self.assertRaises(JSONLexError) as e:
+                list(JSONLexer(source))
+
+            self.assertEqual(msg, str(e.exception))
+
     def test_end_10_dot_5_e_3(self):
         source = StringIO(
             '{"a": 10.5e3')
@@ -117,6 +130,22 @@ class TestJSONLexer(unittest.TestCase):
                           (LexerToken.STRING, 'a'),
                           (LexerToken.NAME_SEPARATOR, None),
                           (LexerToken.FLOAT_VALUE, '10.5e3')],
+                         list(JSONLexer(source)))
+
+    def test_10_53(self):
+        source = StringIO(
+            '[10.53]')
+        self.assertEqual([(LexerToken.BEGIN_ARRAY, None),
+                          (LexerToken.FLOAT_VALUE, '10.53'),
+                          (LexerToken.END_ARRAY, None)],
+                         list(JSONLexer(source)))
+
+    def test_10_e_53(self):
+        source = StringIO(
+            '[10e-53]')
+        self.assertEqual([(LexerToken.BEGIN_ARRAY, None),
+                          (LexerToken.FLOAT_VALUE, '10e-53'),
+                          (LexerToken.END_ARRAY, None)],
                          list(JSONLexer(source)))
 
     def test_10_dot_5_e_minus_3(self):

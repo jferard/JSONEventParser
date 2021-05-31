@@ -65,12 +65,15 @@ class LexerState(Enum):
 class LexerSubState(Enum):
     NONE = 0
 
-    NEG_NUMBER = 10
-    ZERO_NUMBER = 11
+    NEG_NUMBER_START = 10
+    ZERO_NUMBER_START = 11
     OTHER_NUMBER = 12
-    NUMBER_FRAC = 21
-    NUMBER_FRAC_EXP = 22
-    NUMBER_FRAC_EXP_MINUS = 23
+    NUMBER_FRAC_START = 21
+    NUMBER_FRAC = 22
+    NUMBER_FRAC_EXP_START = 31
+    NUMBER_FRAC_EXP = 32
+    NUMBER_FRAC_EXP_MINUS_START = 41
+    NUMBER_FRAC_EXP_MINUS = 42
 
     ESCAPE = 50
     UNICODE = 51
@@ -119,28 +122,25 @@ class JSONLexer:
                 next_char = self._source.read(1)
             if not next_char:  # end of the source
                 if state == LexerState.NUMBER:  # finish our number if possible
-                    if sub_state == LexerSubState.ZERO_NUMBER:
+                    if sub_state == LexerSubState.ZERO_NUMBER_START:
                         yield LexerToken.INT_VALUE, "0"
-                    elif sub_state == LexerSubState.NEG_NUMBER:
-                        if buf[-1] == "-":
-                            self._lex_error("Missing digits `{}`", buf)
-                        yield LexerToken.INT_VALUE, buf
+                    elif sub_state == LexerSubState.NEG_NUMBER_START:
+                        self._lex_error("Missing digits `{}`", buf)
                     elif sub_state == LexerSubState.OTHER_NUMBER:
                         yield LexerToken.INT_VALUE, buf
+                    elif sub_state == LexerSubState.NUMBER_FRAC_START:
+                        self._lex_error("Missing decimals `{}`", buf)
                     elif sub_state == LexerSubState.NUMBER_FRAC:
-                        if buf[-1] == ".":
-                            self._lex_error("Missing decimals `{}`", buf)
                         yield LexerToken.FLOAT_VALUE, buf
+                    elif sub_state == LexerSubState.NUMBER_FRAC_EXP_START:
+                        self._lex_error("Missing exp `{}`", buf)
                     elif sub_state == LexerSubState.NUMBER_FRAC_EXP:
-                        if buf[-1] == "e":
-                            self._lex_error("Missing exp `{}`", buf)
-                        else:
-                            yield LexerToken.FLOAT_VALUE, buf
+                        yield LexerToken.FLOAT_VALUE, buf
+                    elif (sub_state
+                          == LexerSubState.NUMBER_FRAC_EXP_MINUS_START):
+                        self._lex_error("Missing exp `{}`", buf)
                     elif sub_state == LexerSubState.NUMBER_FRAC_EXP_MINUS:
-                        if buf[-1] == "-":
-                            self._lex_error("Missing exp `{}`", buf)
-                        else:
-                            yield LexerToken.FLOAT_VALUE, buf
+                        yield LexerToken.FLOAT_VALUE, buf
                 elif state == LexerState.STRING:  # unfinished string
                     self._lex_error("Missing end quote `{}`", buf)
                 return
@@ -178,11 +178,11 @@ class JSONLexer:
                     yield LexerToken.VALUE_SEPARATOR, None
                 elif next_char in "-":  # number (negative)
                     state = LexerState.NUMBER
-                    sub_state = LexerSubState.NEG_NUMBER
+                    sub_state = LexerSubState.NEG_NUMBER_START
                     buf = "-"
                 elif next_char == "0":  # number (0 or 0.)
                     state = LexerState.NUMBER
-                    sub_state = LexerSubState.ZERO_NUMBER
+                    sub_state = LexerSubState.ZERO_NUMBER_START
                     buf = "0"
                 elif next_char in "123456789":  # other number
                     state = LexerState.NUMBER
@@ -195,18 +195,18 @@ class JSONLexer:
                 else:
                     self._lex_error("Unexpected char `{}`", next_char)
             elif state == LexerState.NUMBER:  # 6. Numbers
-                if sub_state == LexerSubState.NEG_NUMBER:
+                if sub_state == LexerSubState.NEG_NUMBER_START:
                     if next_char == "0":
-                        sub_state = LexerSubState.ZERO_NUMBER
+                        sub_state = LexerSubState.ZERO_NUMBER_START
                         buf += "0"
                     elif next_char in "123456789":
                         buf += next_char
                         sub_state = LexerSubState.OTHER_NUMBER
                     else:
                         self._lex_error("Expected digit, got `{}`", next_char)
-                elif sub_state == LexerSubState.ZERO_NUMBER:  # -0 or 0
+                elif sub_state == LexerSubState.ZERO_NUMBER_START:  # -0 or 0
                     if next_char == ".":
-                        sub_state = LexerSubState.NUMBER_FRAC
+                        sub_state = LexerSubState.NUMBER_FRAC_START
                         buf += "."
                     else:
                         yield LexerToken.INT_VALUE, "0"
@@ -214,21 +214,30 @@ class JSONLexer:
                         unget = next_char
                         state = LexerState.NONE
                         sub_state = LexerSubState.NONE
-                elif sub_state == LexerSubState.OTHER_NUMBER:  # -[1-9] or [1-9]
+                elif sub_state == LexerSubState.OTHER_NUMBER:  # -[1-9]or [1-9]
                     if next_char == ".":
-                        sub_state = LexerSubState.NUMBER_FRAC
+                        sub_state = LexerSubState.NUMBER_FRAC_START
                         buf += "."
                     elif next_char in "0123456789":
                         buf += next_char
+                    elif next_char in "eE":
+                        buf += 'e'
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP_START
                     else:
                         yield LexerToken.INT_VALUE, buf
                         buf = None
                         unget = next_char
                         state = LexerState.NONE
                         sub_state = LexerSubState.NONE
+                elif sub_state == LexerSubState.NUMBER_FRAC_START:
+                    if next_char in "0123456789":
+                        buf += next_char
+                        sub_state = LexerSubState.NUMBER_FRAC
+                    else:
+                        self._lex_error("Missing decimals `{}`", buf)
                 elif sub_state == LexerSubState.NUMBER_FRAC:
                     if next_char == "e" or next_char == "E":
-                        sub_state = LexerSubState.NUMBER_FRAC_EXP
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP_START
                         buf += "e"
                     elif next_char in "0123456789":
                         buf += next_char
@@ -238,11 +247,17 @@ class JSONLexer:
                         unget = next_char
                         state = LexerState.NONE
                         sub_state = LexerSubState.NONE
-                elif sub_state == LexerSubState.NUMBER_FRAC_EXP:
+                elif sub_state == LexerSubState.NUMBER_FRAC_EXP_START:
                     if next_char == "-":
-                        sub_state = LexerSubState.NUMBER_FRAC_EXP_MINUS
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP_MINUS_START
                         buf += "-"
                     elif next_char in "0123456789":
+                        buf += next_char
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP
+                    else:
+                        self._lex_error("Missing exp `{}`", buf)
+                elif sub_state == LexerSubState.NUMBER_FRAC_EXP:
+                    if next_char in "0123456789":
                         buf += next_char
                     else:
                         yield LexerToken.FLOAT_VALUE, buf
@@ -250,6 +265,12 @@ class JSONLexer:
                         unget = next_char
                         state = LexerState.NONE
                         sub_state = LexerSubState.NONE
+                elif sub_state == LexerSubState.NUMBER_FRAC_EXP_MINUS_START:
+                    if next_char in "0123456789":
+                        buf += next_char
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP_MINUS
+                    else:
+                        self._lex_error("Missing exp `{}`", buf)
                 elif sub_state == LexerSubState.NUMBER_FRAC_EXP_MINUS:
                     if next_char in "0123456789":
                         buf += next_char
