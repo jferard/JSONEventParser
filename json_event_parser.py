@@ -117,6 +117,10 @@ class JSONLexer:
                 if state == LexerState.NUMBER:  # finish our number if possible
                     if sub_state == LexerState.ZERO_NUMBER:
                         yield LexerToken.INT_VALUE, "0"
+                    elif sub_state == LexerState.NEG_NUMBER:
+                        if buf[-1] == "-":
+                            self._lex_error("Missing digits `{}`", buf)
+                        yield LexerToken.INT_VALUE, buf
                     elif sub_state == LexerState.OTHER_NUMBER:
                         yield LexerToken.INT_VALUE, buf
                     elif sub_state == LexerState.NUMBER_FRAC:

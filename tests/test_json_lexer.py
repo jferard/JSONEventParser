@@ -155,6 +155,14 @@ class TestJSONLexer(unittest.TestCase):
         self.assertEqual("LexError: Missing end quote `foo` at 0:4",
                          str(e.exception))
 
+    def test_unifinished_neg_number(self):
+        source = StringIO('-')
+        with self.assertRaises(JSONLexError) as e:
+            list(JSONLexer(source))
+
+        self.assertEqual("LexError: Missing digits `-` at 0:1",
+                         str(e.exception))
+
     def test_word_errs(self):
         for word, msg in [
             ("foo", "LexError: Expected `false` at 0:1"),
