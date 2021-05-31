@@ -208,6 +208,9 @@ class JSONLexer:
                     if next_char == ".":
                         sub_state = LexerSubState.NUMBER_FRAC_START
                         buf += "."
+                    elif next_char == "e" or next_char == "E":
+                        sub_state = LexerSubState.NUMBER_FRAC_EXP_START
+                        buf += "e"
                     else:
                         yield LexerToken.INT_VALUE, "0"
                         buf = None

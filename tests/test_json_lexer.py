@@ -68,6 +68,12 @@ class TestJSONLexer(unittest.TestCase):
         self.assertEqual("LexError: Missing exp `0.1e` at 0:4",
                          str(e.exception))
 
+    def test_0_exp(self):
+        source = StringIO('[-0e10]')
+        self.assertEqual([(LexerToken.BEGIN_ARRAY, None),
+                          (LexerToken.FLOAT_VALUE, '-0e10'),
+                          (LexerToken.END_ARRAY, None)], list(JSONLexer(source)))
+
     def test_wrong_token(self):
         source = StringIO('Wrong')
         with self.assertRaises(JSONLexError) as e:
