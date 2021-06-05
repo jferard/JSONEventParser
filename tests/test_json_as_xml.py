@@ -30,7 +30,7 @@ class TestJSONAsXML(unittest.TestCase):
             '{"a": [-1, 2.0, {"b": -0.7e10, "column":["x", "y"]}], "x": 12, "y": true, "z": null}')
         actual = "".join(JSONAsXML(source, list_item="list_item"))
         self.assertEqual("""<?xml version="1.0" encoding="utf-8"?>
-<root><a><list_item>-1</list_item><list_item>2.0</list_item><list_item><b>-0.7e10</b><column><list_item>x</list_item><list_item>y</list_item></column></list_item></a><x>12</x><y>True</y><z>None</z></root>""",
+<root><a><list_item>-1</list_item><list_item>2.0</list_item><list_item><b>-0.7e10</b><column><list_item>x</list_item><list_item>y</list_item></column></list_item></a><x>12</x><y>true</y><z>null</z></root>""",
                          actual)
 
     def test_example1(self):

@@ -17,7 +17,7 @@
                     <templateOverridePath type="string"/>
                     <defaultListTemplate type="string">listTemplate.htm</defaultListTemplate>
                     <defaultFileTemplate type="string">articleTemplate.htm</defaultFileTemplate>
-                    <useJSP type="boolean">False</useJSP>
+                    <useJSP type="boolean">false</useJSP>
                     <jspListTemplate type="string">listTemplate.jsp</jspListTemplate>
                     <jspFileTemplate type="string">articleTemplate.jsp</jspFileTemplate>
                     <cachePackageTagsTrack type="int">200</cachePackageTagsTrack>
@@ -33,7 +33,7 @@
                     <searchEngineListTemplate type="string">forSearchEnginesList.htm</searchEngineListTemplate>
                     <searchEngineFileTemplate type="string">forSearchEngines.htm</searchEngineFileTemplate>
                     <searchEngineRobotsDb type="string">WEB-INF/robots.db</searchEngineRobotsDb>
-                    <useDataStore type="boolean">True</useDataStore>
+                    <useDataStore type="boolean">true</useDataStore>
                     <dataStoreClass type="string">org.cofax.SqlDataStore</dataStoreClass>
                     <redirectionClass type="string">org.cofax.SqlRedirection</redirectionClass>
                     <dataStoreName type="string">cofax</dataStoreName>
@@ -82,7 +82,7 @@
                     <fileTransferFolder type="string">/usr/local/tomcat/webapps/content/fileTransferFolder</fileTransferFolder>
                     <lookInContext type="int">1</lookInContext>
                     <adminGroupID type="int">4</adminGroupID>
-                    <betaServer type="boolean">True</betaServer>
+                    <betaServer type="boolean">true</betaServer>
                 </init-param>
             </li>
         </servlet>

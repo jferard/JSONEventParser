@@ -10,7 +10,7 @@
                 <id type="string">OpenNew</id>
                 <label type="string">Open New</label>
             </li>
-            <li type="null">None</li>
+            <li type="null">null</li>
             <li>
                 <id type="string">ZoomIn</id>
                 <label type="string">Zoom In</label>
@@ -23,7 +23,7 @@
                 <id type="string">OriginalView</id>
                 <label type="string">Original View</label>
             </li>
-            <li type="null">None</li>
+            <li type="null">null</li>
             <li>
                 <id type="string">Quality</id>
             </li>
@@ -33,7 +33,7 @@
             <li>
                 <id type="string">Mute</id>
             </li>
-            <li type="null">None</li>
+            <li type="null">null</li>
             <li>
                 <id type="string">Find</id>
                 <label type="string">Find...</label>
@@ -65,7 +65,7 @@
                 <id type="string">SaveAs</id>
                 <label type="string">Save As</label>
             </li>
-            <li type="null">None</li>
+            <li type="null">null</li>
             <li>
                 <id type="string">Help</id>
             </li>

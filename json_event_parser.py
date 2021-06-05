@@ -313,6 +313,7 @@ class JSONLexer:
                         self._lex_error(
                             "Unknown escaped char: `{}`", next_char)
                 elif sub_state == LexerSubState.UNICODE:
+                    # TODO: replace sub_buf by unicode and unicode_index.
                     sub_buf += next_char
                     if len(sub_buf) == 4:
                         buf += chr(int("".join(sub_buf), 16))
@@ -637,16 +638,28 @@ class JSONAsXML:
                             yield self._text.format(spaces, cur_key, value)
                         else:
                             yield self._empty.format(spaces, cur_key)
+                elif token_type == LexerToken.BOOLEAN_VALUE:
+                    value = "true" if value else "false"
+                    if self._typed:
+                        value_type = "boolean"
+                        yield self._typed_text.format(
+                            spaces, cur_key, value_type, value)
+                    else:
+                        yield self._text.format(spaces, cur_key, value)
+                elif token_type == LexerToken.NULL_VALUE:
+                    value = "null"
+                    if self._typed:
+                        value_type = "null"
+                        yield self._typed_text.format(
+                            spaces, cur_key, value_type, value)
+                    else:
+                        yield self._text.format(spaces, cur_key, value)
                 else:
                     if self._typed:
                         if token_type == LexerToken.INT_VALUE:
                             value_type = "int"
                         elif token_type == LexerToken.FLOAT_VALUE:
                             value_type = "float"
-                        elif token_type == LexerToken.BOOLEAN_VALUE:
-                            value_type = "boolean"
-                        elif token_type == LexerToken.NULL_VALUE:
-                            value_type = "null"
                         else:
                             raise Exception("Token type " + token_type)
                         yield self._typed_text.format(
