@@ -103,7 +103,7 @@ class JSONLexer:
     A JSONLexer. Uses a `state` and a `sub_state`.
     """
 
-    def __init__(self, source: TextIOBase, ignore_unicode_errors: bool=True):
+    def __init__(self, source: TextIOBase, ignore_unicode_errors: bool = True):
         self._source = source
         self._ignore_unicode_errors = ignore_unicode_errors
         self.line = 0
@@ -318,7 +318,7 @@ class JSONLexer:
                 elif sub_state == LexerSubState.UNICODE:
                     if unicode_index <= 3:
                         n = int(next_char, 16)
-                        code_point = code_point *16 + n
+                        code_point = code_point * 16 + n
                         unicode_index += 1
                     if unicode_index == 4:
                         try:
