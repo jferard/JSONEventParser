@@ -103,8 +103,9 @@ class JSONLexer:
     A JSONLexer. Uses a `state` and a `sub_state`.
     """
 
-    def __init__(self, source: TextIOBase):
+    def __init__(self, source: TextIOBase, ignore_unicode_errors: bool=True):
         self._source = source
+        self._ignore_unicode_errors = ignore_unicode_errors
         self.line = 0
         self.column = 0
 
@@ -112,7 +113,8 @@ class JSONLexer:
         state = LexerState.NONE
         sub_state = None
         buf = None
-        sub_buf = None
+        unicode_index = 0
+        code_point = 0
         unget = None  # a one place buffer to `unget` char
         while True:
             if unget:
@@ -287,7 +289,7 @@ class JSONLexer:
                     self._lex_error("Unexpected number state {}".format(
                         sub_state))
             elif state == LexerState.STRING:  # 7. Strings
-                if sub_state == LexerSubState.ESCAPE:  # TODO: unicode
+                if sub_state == LexerSubState.ESCAPE:
                     if next_char in "\"\\":
                         buf += next_char
                         sub_state = LexerSubState.NONE
@@ -308,16 +310,26 @@ class JSONLexer:
                         sub_state = LexerSubState.NONE
                     elif next_char == "u":
                         sub_state = LexerSubState.UNICODE
-                        sub_buf = []
+                        unicode_index = 0
+                        code_point = 0
                     else:
                         self._lex_error(
                             "Unknown escaped char: `{}`", next_char)
                 elif sub_state == LexerSubState.UNICODE:
-                    # TODO: replace sub_buf by unicode and unicode_index.
-                    sub_buf += next_char
-                    if len(sub_buf) == 4:
-                        buf += chr(int("".join(sub_buf), 16))
-                        sub_buf = None
+                    if unicode_index <= 3:
+                        n = int(next_char, 16)
+                        code_point = code_point *16 + n
+                        unicode_index += 1
+                    if unicode_index == 4:
+                        try:
+                            buf += chr(code_point)
+                        except UnicodeEncodeError as e:
+                            if self._ignore_unicode_errors:
+                                buf += chr(0xfffd)
+                            else:
+                                raise e
+                        unicode_index = 0
+                        code_point = 0
                         sub_state = LexerSubState.NONE
                 elif next_char == '\\':
                     sub_state = LexerSubState.ESCAPE
