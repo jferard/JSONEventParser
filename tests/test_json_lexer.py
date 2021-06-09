@@ -33,6 +33,18 @@ class TestJSONLexer(unittest.TestCase):
         source = StringIO('"a\\u0062c"')
         self.assertEqual([(LexerToken.STRING, "abc")], list(JSONLexer(source)))
 
+    def test_unicode_high_surrogate(self):
+        source = StringIO('"\\ud83c"')
+        self.assertEqual([(LexerToken.STRING, '�')], list(JSONLexer(source)))
+
+    def test_unicode_low_surrogate(self):
+        source = StringIO('"\\udf09"')
+        self.assertEqual([(LexerToken.STRING, '�')], list(JSONLexer(source)))
+
+    def test_unicode_surrogates(self):
+        source = StringIO('"\\ud83c\\udf09"')
+        self.assertEqual([(LexerToken.STRING, '🌉')], list(JSONLexer(source)))
+
     def test_escape(self):
         source = StringIO('"\\t\\r\\n\\b\\f"')
         self.assertEqual([(LexerToken.STRING, "\t\r\n\b\f")],

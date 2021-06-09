@@ -115,6 +115,7 @@ class JSONLexer:
         buf = None
         unicode_index = 0
         code_point = 0
+        high = 0
         unget = None  # a one place buffer to `unget` char
         while True:
             if unget:
@@ -144,6 +145,12 @@ class JSONLexer:
                     elif sub_state == LexerSubState.NUMBER_FRAC_EXP_MINUS:
                         yield LexerToken.FLOAT_VALUE, buf
                 elif state == LexerState.STRING:  # unfinished string
+                    if high != 0:
+                        if self._ignore_unicode_errors:
+                            buf += chr(0xfffd)
+                        else:
+                            buf += chr(high)
+                        high = 0
                     self._lex_error("Missing end quote `{}`", buf)
                 return
 
@@ -290,31 +297,33 @@ class JSONLexer:
                         sub_state))
             elif state == LexerState.STRING:  # 7. Strings
                 if sub_state == LexerSubState.ESCAPE:
-                    if next_char in "\"\\":
-                        buf += next_char
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "b":
-                        buf += "\b"
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "f":
-                        buf += "\f"
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "n":
-                        buf += "\n"
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "r":
-                        buf += "\r"
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "t":
-                        buf += "\t"
-                        sub_state = LexerSubState.NONE
-                    elif next_char == "u":
-                        sub_state = LexerSubState.UNICODE
-                        unicode_index = 0
-                        code_point = 0
+                    try:
+                        c = {
+                            "\"": "\"",
+                            "\\": "\\",
+                            "b": "\b",
+                            "f": "\f",
+                            "n": "\n",
+                            "r": "\r",
+                            "t": "\t",
+                        }[next_char]
+                    except KeyError:
+                        if next_char == "u":
+                            sub_state = LexerSubState.UNICODE
+                            unicode_index = 0
+                            code_point = 0
+                        else:
+                            self._lex_error(
+                                "Unknown escaped char: `{}`", next_char)
                     else:
-                        self._lex_error(
-                            "Unknown escaped char: `{}`", next_char)
+                        if high != 0:
+                            if self._ignore_unicode_errors:
+                                buf += chr(0xfffd)
+                            else:
+                                buf += chr(high)
+                            high = 0
+                        buf += c
+                        sub_state = LexerSubState.NONE
                 elif sub_state == LexerSubState.UNICODE:
                     if unicode_index <= 3:
                         n = int(next_char, 16)
@@ -322,8 +331,22 @@ class JSONLexer:
                         unicode_index += 1
                     if unicode_index == 4:
                         try:
-                            buf += chr(code_point)
-                        except UnicodeEncodeError as e:
+                            # high surrogate
+                            if 0xd800 <= code_point <= 0xdbff:
+                                high = code_point
+                            # low surrogate
+                            elif 0xdc00 <= code_point <= 0xdfff:
+                                if high != 0:
+                                    code_point = (0x10000 + (
+                                            high - 0xd800) * 0x400
+                                                  + code_point - 0xdc00)
+                                    buf += chr(code_point)
+                                    high = 0
+                                else:
+                                    raise ValueError()
+                            else:
+                                buf += chr(code_point)
+                        except ValueError as e:
                             if self._ignore_unicode_errors:
                                 buf += chr(0xfffd)
                             else:
@@ -333,12 +356,20 @@ class JSONLexer:
                         sub_state = LexerSubState.NONE
                 elif next_char == '\\':
                     sub_state = LexerSubState.ESCAPE
-                elif next_char == '"':
-                    state = LexerState.NONE
-                    yield LexerToken.STRING, buf
-                    buf = ""
-                else:  # unescaped
-                    buf += next_char
+                else:
+                    if high != 0:
+                        if self._ignore_unicode_errors:
+                            buf += chr(0xfffd)
+                        else:
+                            buf += chr(high)
+                        high = 0
+
+                    if next_char == '"':  # end of string
+                        state = LexerState.NONE
+                        yield LexerToken.STRING, buf
+                        buf = ""
+                    else:  # unescaped
+                        buf += next_char
 
     def _lex_error(self, msg, *parameters):
         if parameters:
@@ -691,10 +722,7 @@ def json2xml(source, dest, **kwargs):
     :return:
     """
     for line in JSONAsXML(source, **kwargs):
-        try:
-            dest.write(line)
-        except UnicodeError:
-            dest.write(ascii(line))
+        dest.write(line)
 
 
 def _get_parser() -> argparse.ArgumentParser:
