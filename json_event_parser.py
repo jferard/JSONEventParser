@@ -30,6 +30,16 @@ from enum import Enum
 from io import TextIOBase
 from typing import Any
 
+ESCAPE_SEQUENCES = {
+    "\"": "\"",
+    "\\": "\\",
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+}
+
 
 class JSONLexError(ValueError):
     """
@@ -145,12 +155,6 @@ class JSONLexer:
                     elif sub_state == LexerSubState.NUMBER_FRAC_EXP_MINUS:
                         yield LexerToken.FLOAT_VALUE, buf
                 elif state == LexerState.STRING:  # unfinished string
-                    if high != 0:
-                        if self._ignore_unicode_errors:
-                            buf += chr(0xfffd)
-                        else:
-                            buf += chr(high)
-                        high = 0
                     self._lex_error("Missing end quote `{}`", buf)
                 return
 
@@ -296,80 +300,112 @@ class JSONLexer:
                     self._lex_error("Unexpected number state {}".format(
                         sub_state))
             elif state == LexerState.STRING:  # 7. Strings
-                if sub_state == LexerSubState.ESCAPE:
-                    try:
-                        c = {
-                            "\"": "\"",
-                            "\\": "\\",
-                            "b": "\b",
-                            "f": "\f",
-                            "n": "\n",
-                            "r": "\r",
-                            "t": "\t",
-                        }[next_char]
-                    except KeyError:
+                if high == 0:
+                    if sub_state == LexerSubState.ESCAPE:
+                        try:
+                            c = ESCAPE_SEQUENCES[next_char]
+                        except KeyError:
+                            if next_char == "u":
+                                sub_state = LexerSubState.UNICODE
+                                unicode_index = 0
+                                code_point = 0
+                            else:
+                                self._lex_error(
+                                    "Unknown escaped char: `{}`", next_char)
+                        else:
+                            buf += c
+                            sub_state = LexerSubState.NONE
+                    elif sub_state == LexerSubState.UNICODE:
+                        if unicode_index <= 3:
+                            n = int(next_char, 16)
+                            code_point = code_point * 16 + n
+                            unicode_index += 1
+                        if unicode_index == 4:
+                            try:
+                                # high surrogate
+                                if 0xd800 <= code_point <= 0xdbff:
+                                    high = code_point
+                                # low surrogate
+                                elif 0xdc00 <= code_point <= 0xdfff:
+                                    if self._ignore_unicode_errors:
+                                        buf += chr(0xfffd)
+                                    else:
+                                        raise ValueError()
+                                else:
+                                    buf += chr(code_point)
+                            except ValueError as e:
+                                if self._ignore_unicode_errors:
+                                    buf += chr(0xfffd)
+                                else:
+                                    raise e
+                            unicode_index = 0
+                            code_point = 0
+                            sub_state = LexerSubState.NONE
+                    elif next_char == '\\':
+                        sub_state = LexerSubState.ESCAPE
+                    else:
+                        if next_char == '"':  # end of string
+                            state = LexerState.NONE
+                            yield LexerToken.STRING, buf
+                            buf = ""
+                        else:  # unescaped
+                            buf += next_char
+                else:
+                    if sub_state == LexerSubState.ESCAPE:
                         if next_char == "u":
                             sub_state = LexerSubState.UNICODE
                             unicode_index = 0
                             code_point = 0
                         else:
-                            self._lex_error(
-                                "Unknown escaped char: `{}`", next_char)
-                    else:
-                        if high != 0:
                             if self._ignore_unicode_errors:
+                                high = 0
+                                unicode_index = 0
+                                code_point = 0
+                                sub_state = LexerSubState.NONE
                                 buf += chr(0xfffd)
                             else:
-                                buf += chr(high)
-                            high = 0
-                        buf += c
-                        sub_state = LexerSubState.NONE
-                elif sub_state == LexerSubState.UNICODE:
-                    if unicode_index <= 3:
-                        n = int(next_char, 16)
-                        code_point = code_point * 16 + n
-                        unicode_index += 1
-                    if unicode_index == 4:
-                        try:
-                            # high surrogate
-                            if 0xd800 <= code_point <= 0xdbff:
-                                high = code_point
-                            # low surrogate
-                            elif 0xdc00 <= code_point <= 0xdfff:
-                                if high != 0:
+                                self._lex_error(
+                                "Waiting for unicode \\u, got : `{}`", next_char)
+                    elif sub_state == LexerSubState.UNICODE:
+                        if unicode_index <= 3:
+                            n = int(next_char, 16)
+                            code_point = code_point * 16 + n
+                            unicode_index += 1
+                        if unicode_index == 4:
+                            try:
+                                # low surrogate
+                                if 0xdc00 <= code_point <= 0xdfff:
                                     code_point = (0x10000 + (
                                             high - 0xd800) * 0x400
                                                   + code_point - 0xdc00)
                                     buf += chr(code_point)
                                     high = 0
                                 else:
-                                    raise ValueError()
-                            else:
-                                buf += chr(code_point)
-                        except ValueError as e:
-                            if self._ignore_unicode_errors:
-                                buf += chr(0xfffd)
-                            else:
-                                raise e
-                        unicode_index = 0
-                        code_point = 0
-                        sub_state = LexerSubState.NONE
-                elif next_char == '\\':
-                    sub_state = LexerSubState.ESCAPE
-                else:
-                    if high != 0:
+                                    self._lex_error(
+                                        "Waiting for low surrogate, got : `{}`",
+                                        code_point)
+                            except ValueError as e:
+                                if self._ignore_unicode_errors:
+                                    buf += chr(0xfffd)
+                                else:
+                                    raise e
+                            high = 0
+                            unicode_index = 0
+                            code_point = 0
+                            sub_state = LexerSubState.NONE
+                    elif next_char == '\\':
+                        sub_state = LexerSubState.ESCAPE
+                    else:
+                        unget = next_char
                         if self._ignore_unicode_errors:
                             buf += chr(0xfffd)
+                            high = 0
+                            unicode_index = 0
+                            code_point = 0
+                            sub_state = LexerSubState.NONE
                         else:
-                            buf += chr(high)
-                        high = 0
-
-                    if next_char == '"':  # end of string
-                        state = LexerState.NONE
-                        yield LexerToken.STRING, buf
-                        buf = ""
-                    else:  # unescaped
-                        buf += next_char
+                            self._lex_error(
+                                "Waiting for backslash, got : `{}`", next_char)
 
     def _lex_error(self, msg, *parameters):
         if parameters:
