@@ -365,7 +365,8 @@ class JSONLexer:
                                 buf += chr(0xfffd)
                             else:
                                 self._lex_error(
-                                "Waiting for unicode \\u, got : `{}`", next_char)
+                                    "Waiting for unicode \\u, got: `{}`",
+                                    next_char)
                     elif sub_state == LexerSubState.UNICODE:
                         if unicode_index <= 3:
                             n = int(next_char, 16)
@@ -379,10 +380,9 @@ class JSONLexer:
                                             high - 0xd800) * 0x400
                                                   + code_point - 0xdc00)
                                     buf += chr(code_point)
-                                    high = 0
                                 else:
                                     self._lex_error(
-                                        "Waiting for low surrogate, got : `{}`",
+                                        "Waiting for low surrogate, got: `{}`",
                                         code_point)
                             except ValueError as e:
                                 if self._ignore_unicode_errors:
@@ -587,8 +587,8 @@ def _escape_tag(key):
 
     https://www.w3.org/TR/2008/REC-xml-20081126/#NT-NameChar
 
-    :param value:
-    :return:
+    :param key: the key
+    :return: the escaped key
     """
     if not key:
         return "_"
